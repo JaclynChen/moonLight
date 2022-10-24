@@ -62,20 +62,9 @@ void setup() {
 void loop(){
 
 
-  int curr_rotary = encoder.getPosition();
-  RotaryEncoder::Direction direction = encoder.getDirection();
-  
+  //printValue(); 
+  movePixel(); 
 
-  if (curr_rotary != last_rotary) {
-    Serial.print("Encoder value: ");
-    Serial.print(curr_rotary);
-    Serial.print(" direction: ");
-    Serial.println((int)direction);
-  }
-  last_rotary = curr_rotary;
-  //fillWhite();
-  //movePixel();
-  changeWidth();
 
 }
 
@@ -87,9 +76,47 @@ void fillWhite(){
   }
 }
 
+void printValue(){
+
+  int curr_rotary = encoder.getPosition();
+  RotaryEncoder::Direction direction = encoder.getDirection();
+  
+
+  if (curr_rotary != last_rotary) {
+    Serial.print("Encoder value: ");
+    Serial.print(curr_rotary);
+    Serial.print(" direction: ");
+    Serial.println((int)direction);
+  }
+  last_rotary = curr_rotary;
+
+
+}
+
 void movePixel(){
-  int potentValue = analogRead(A0); //potentiometer A0 on esp
-  int mappedValue = map(potentValue, 0, 1023, 0, 143);
+
+
+  int curr_rotary = encoder.getPosition();
+  RotaryEncoder::Direction direction = encoder.getDirection();
+  
+
+  if (curr_rotary != last_rotary) {
+  
+  Serial.print("Encoder value: ");
+  Serial.print(curr_rotary);
+  Serial.print(" direction: ");
+  Serial.println((int)direction);
+  
+   FastLED.clear(); 
+   leds[curr_rotary] = 0x228B22;
+   FastLED.show();
+   delay(10);
+  }
+  last_rotary = curr_rotary;
+
+
+/*
+
   FastLED.clear();  // clear all pixel data
   FastLED.show();
 
@@ -97,7 +124,7 @@ void movePixel(){
   FastLED.show();
   delay(10);
 
-  currPixel = mappedValue; 
+  currPixel = mappedValue; */
 
 }
 
