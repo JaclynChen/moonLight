@@ -10,14 +10,18 @@
 #define PIN_ENCODER_B D1 //D1
 #define COM_A    D2 //D2
 #define COM_B    D4 //pin D4
+#define BUTTON_CENTER D5 
 
 CRGBW leds[NUM_LEDS];
 CRGB *ledsRGB = (CRGB *) &leds[0];
 
 const uint8_t brightness = 128;
 
-int currPixel = 0; 
-int width = 0;
+int prevButton = 0; 
+int buttonMode = 0; 
+
+int start = 0; 
+int width = 5; 
 
 
 RotaryEncoder encoder(PIN_ENCODER_A, PIN_ENCODER_B, RotaryEncoder::LatchMode::TWO03);
@@ -49,31 +53,46 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_A), checkPosition, CHANGE);
   attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_B), checkPosition, CHANGE);
 
-
-
-
-
-
-
+   pinMode(BUTTON_CENTER, INPUT_PULLUP);
 
 
 }
 
 void loop(){
 
+  int button = ! digitalRead(BUTTON_CENTER);
 
-  //printValue(); 
-  movePixel(); 
+  if(button != prevButton){
+    if(buttonMode == 2){
+      buttonMode = 0; 
+    }else{
+      buttonMode++; 
+    }
+    prevButton = button;
+    Serial.println(buttonMode);
+    delay(200);
+  }
 
+  if(buttonMode == 0){
+    FastLED.clear(); 
+    FastLED.show(); 
+    delay(10); 
+  }else if(buttonMode == 1){
+    fillWhite(); 
+  }else if(buttonMode == 2){
+    movePixel(); 
+  }
+
+ 
 
 }
 
 void fillWhite(){
   for(int i = 0; i < NUM_LEDS; i++){
     leds[i] = CRGBW(0, 0, 0, 10);
-    FastLED.show();
-    delay(10);
   }
+  FastLED.show();
+    delay(10);
 }
 
 void printValue(){
@@ -95,70 +114,64 @@ void printValue(){
 
 void movePixel(){
 
+  int color = 0x228B22;
+
+  FastLED.clear(); 
+  for(int i = start; i < start + width; i++){
+    leds[i] = color; 
+  }  
+  FastLED.show(); 
+  delay(10); 
+
+  int curr_rotary = encoder.getPosition();
+  RotaryEncoder::Direction direction = encoder.getDirection();
+
+ 
+  if (curr_rotary != last_rotary) {
+
+     int currStart = start; 
+  
+     if(curr_rotary <= 0){
+    currStart = max(0, curr_rotary);
+
+  }else{
+    currStart = min(NUM_LEDS - width, curr_rotary);
+  }
+
+
+    FastLED.clear(); 
+    for(int i = currStart; i < currStart + width; i++){
+      leds[i] = color; 
+    }
+
+    start = currStart; 
+
+    FastLED.show(); 
+    delay(10);
+
+
+   
+   
+   
+   /*leds[curr_rotary % NUM_LEDS] = color; 
+   FastLED.show();
+   delay(10);*/
+  }
+
+  last_rotary = curr_rotary;
+}
+
+
+
+void changeWidth(){
 
   int curr_rotary = encoder.getPosition();
   RotaryEncoder::Direction direction = encoder.getDirection();
   
+  if(curr_rotary != last_rotary){
 
-  if (curr_rotary != last_rotary) {
-  
-  Serial.print("Encoder value: ");
-  Serial.print(curr_rotary);
-  Serial.print(" direction: ");
-  Serial.println((int)direction);
-  
-   FastLED.clear(); 
-   leds[curr_rotary] = 0x228B22;
-   FastLED.show();
-   delay(10);
+
   }
-  last_rotary = curr_rotary;
-
-
-/*
-
-  FastLED.clear();  // clear all pixel data
-  FastLED.show();
-
-  leds[mappedValue] = 0x228B22;
-  FastLED.show();
-  delay(10);
-
-  currPixel = mappedValue; */
-
-}
-
-//save potentiometer value
-//save current mode
-
-void changeWidth(){
-
-  //int centerPixel = 22; 
-  int increaseLimit = 144 - currPixel - width; 
-  int potentValue = analogRead(A0); //potentiometer A0 on esp
-  int mappedValue = map(potentValue, 0, 1023, 0, increaseLimit);
-
-  if(mappedValue < width){
-    for(int i = currPixel + width; i > currPixel; i--){
-      leds[i] = CRGB::Black;
-      FastLED.show();
-      delay(30);
-    }
-  }else{
-    for(int i = currPixel; i < currPixel + mappedValue; i++){
-      leds[i] = 0x228B22;
-      FastLED.show();
-      delay(30);
-    }
-  }
-
-  //width = mappedValue; 
-
-  // leds[0] = CRGB::Black; FastLED.show(); delay(30);
-
-  //currPixel = currPixel + mappedValue; 
-  FastLED.show();
-
 
 }
 
