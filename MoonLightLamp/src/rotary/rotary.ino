@@ -17,11 +17,18 @@ CRGB *ledsRGB = (CRGB *) &leds[0];
 
 const uint8_t brightness = 128;
 
-int prevButton = 0; 
+
 int buttonMode = 0; 
+int lastButtonState = LOW; 
+int currentButtonState;
+long lastDebounceTime = 0; // the last time the output pin was toggled
+long debounceDelay = 50;    // the debounce time; increase if the output flickers
+
 
 int start = 0; 
 int width = 5; 
+
+int color = 0x228B22;
 
 
 RotaryEncoder encoder(PIN_ENCODER_A, PIN_ENCODER_B, RotaryEncoder::LatchMode::TWO03);
@@ -60,18 +67,22 @@ void setup() {
 
 void loop(){
 
-  int button = ! digitalRead(BUTTON_CENTER);
 
-  if(button != prevButton){
-    if(buttonMode == 2){
+
+  currentButtonState = digitalRead(BUTTON_CENTER);
+  
+  if(lastButtonState == HIGH && currentButtonState == LOW){
+    if(buttonMode == 3){
       buttonMode = 0; 
     }else{
       buttonMode++; 
     }
-    prevButton = button;
-    Serial.println(buttonMode);
-    delay(200);
+  Serial.print("Button mode is ");
+  Serial.println(buttonMode);
+  
   }
+
+  lastButtonState = currentButtonState; 
 
   if(buttonMode == 0){
     FastLED.clear(); 
@@ -81,11 +92,13 @@ void loop(){
     fillWhite(); 
   }else if(buttonMode == 2){
     movePixel(); 
+  }else if(buttonMode == 3){
+    reset(0x9370DB); 
+    changeWidth(); 
   }
-
+}
  
 
-}
 
 void fillWhite(){
   for(int i = 0; i < NUM_LEDS; i++){
@@ -114,7 +127,7 @@ void printValue(){
 
 void movePixel(){
 
-  int color = 0x228B22;
+
 
   FastLED.clear(); 
   for(int i = start; i < start + width; i++){
@@ -148,30 +161,62 @@ void movePixel(){
 
     FastLED.show(); 
     delay(10);
-
-
-   
-   
-   
-   /*leds[curr_rotary % NUM_LEDS] = color; 
-   FastLED.show();
-   delay(10);*/
   }
 
   last_rotary = curr_rotary;
 }
 
 
+void reset(int currColor){
+
+  FastLED.clear(); 
+  for(int i = start; i < start + width; i++){
+    leds[i] = currColor; 
+  }  
+  FastLED.show(); 
+  delay(10); 
+
+
+}
+
+
 
 void changeWidth(){
 
+  int MediumPurple = 0x9370DB; 
+
   int curr_rotary = encoder.getPosition();
   RotaryEncoder::Direction direction = encoder.getDirection();
-  
+
   if(curr_rotary != last_rotary){
 
+    int currWidth = width; 
+    int change = curr_rotary - last_rotary; 
 
+    if(change >= 0){
+      //increase width
+      int changeLimit = NUM_LEDS - (start + width);
+      change = min(change, changeLimit);
+      currWidth = width + change; 
+    }else{
+      //decrease width
+      currWidth = width + change; 
+      currWidth = max(1, currWidth);
+    }
+
+    FastLED.clear(); 
+
+    for(int i = start; i < min(NUM_LEDS, start + currWidth); i++){
+      leds[i] = MediumPurple; 
+    }
+
+    width = currWidth; 
+    FastLED.show(); 
+    delay(30);
+
+  
   }
+  last_rotary = curr_rotary;
 
 }
 
